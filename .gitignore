@@ -1,0 +1,3 @@
+.env
+/hue/.env
+/hue/*.env
