@@ -2,9 +2,15 @@
 
 # Program to output a system information page
 
+PROGNAME="$(basename "$0")"
 declare -r TITLE="System Information Report For $HOSTNAME" #Read-only constant
 CURRENT_TIME="$(date +"%x %r %Z")"
 TIMESTAMP="Generated $CURRENT_TIME, by $USER"
+
+usage () {
+    echo "$PROGNAME: usage: $PROGNAME [-f file | -i interactive mode]"
+    return
+}
 
 report_uptime () {
     cat <<- _EOF_
@@ -23,22 +29,38 @@ _EOF_
 }
 
 report_home_space () {
+
+    local format="%8s%10s%10s\n"
+    local i dir_list total_files total_dirs total_size user_name
+
     if [[ "$(id -u)" -eq 0 ]]; then  
-        cat <<- _EOF_
-        <h2>Home Space Utilization (All Users)</h2>
-        <pre>$(du -sh /home/*)</pre>
-_EOF_
+        dir_list=/home/*
+        username="All Users"
     else
-        cat <<- _EOF_
-        <h2>Home Space Utilization ($USER)</h2>
-        <pre>$(du -sh $HOME)</pre>
-_EOF_
+        dir_list="$HOME"
+        user_name="$USER"
     fi
+
+    echo "<h2>Home Space Utilization ($user_name)</h2>"
+
+    for i in $dir_list; do
+
+        total_files="$(find "$i" -type f | wc -l)"
+        total_dirs="$(find "$i" -type d | wc -l)"
+        total_size="$(du -sh "$i" | cut -f 1)"
+
+        echo "<h3>$i</h3>"
+        echo "<pre>"
+        printf "$format" "Dirs" "Files" "Size"
+        printf "$format" "----" "-----" "----"
+        printf "$format" "$total_dirs" "$total_files" "$total_size"
+        echo "</pre>"
+    done
     return
 }
 
-
-cat << _EOF_
+write_html_page () {
+    cat << _EOF_
 <html>
     <head>
         <title>$TITLE</title>
@@ -52,3 +74,60 @@ cat << _EOF_
     </body>
 </html>
 _EOF_
+return
+}
+
+interactive=
+filename=
+
+while [[ -n "$1" ]]; do
+    case "$1" in
+        -f | --file)            shift
+                                filename="$1"
+                                ;;
+        -i | --interactive)     interactive=1
+                                ;;
+        -h | --help)            usage
+                                exit
+                                ;;
+        *)                      usage >&2
+                                exit 1
+                                ;;
+    esac
+    shift
+done
+
+# interactive mode
+
+if [[ -n "$interactive" ]]; then
+    while true; do
+        read -p "Enter name of the output file: " filename
+        if [[ -e "$filename" ]]; then
+            read -p "'$filename' exists. Overwrite? [y/n/q] > "
+            case "$REPLY" in
+                Y|y) break
+                     ;;
+                Q|q) echo "Program terminated."
+                     exit
+                     ;;
+                *)   continue
+                     ;;
+            esac
+        elif [[ -z "$filename" ]]; then
+            continue
+        else
+            break
+        fi
+    done
+fi
+
+if [[ -n "$filename" ]]; then
+    if touch "$filename" && [[ -f "$filename" ]]; then
+        write_html_page > "$filename"
+    else
+        echo "$PROGNAME: Cannot write file '$filename'" >&2
+        exit 1
+    fi
+else
+    write_html_page
+fi

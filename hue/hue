@@ -11,8 +11,6 @@ retrieve_device_list () {
     # Returns a JSON array of objects with all lights connected to the bridge
 }
 
-#curl --header "hue-application-key: ${username}" \
-#    -k "https://${bridge_ip}/clip/v2/resource/light/${lavalamp}" | jq > lavalamp.json
 
 lavalamp_on () {
     curl \
@@ -28,14 +26,9 @@ lavalamp_off () {
     -kX PUT "https://${bridge_ip}/clip/v2/resource/light/${lavalamp}"
 }
 
-read var1 var2
-
-echo "$var1"
-echo "$var2"
-
-if [[ "$var2" == aan ]]; then
+if [[ "$2" == aan ]]; then
     lavalamp_on
 fi
-if [[ "$var2" == uit ]]; then
+if [[ "$2" == uit ]]; then
     lavalamp_off
 fi
