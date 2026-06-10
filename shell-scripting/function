@@ -1,0 +1,14 @@
+#!/bin/bash
+
+print_to_screen(){
+    echo "$1" #reads param 1 passed to function and echo's it
+    echo "$2" #reads param 2 passed to function and echo's it
+}
+
+if [[ $1 ]]; then
+    var="$1"
+    print_to_screen "$var" "test2"
+else
+    echo "exiting program"
+    exit
+fi
